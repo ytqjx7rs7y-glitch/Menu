@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>قائمة الطلبات - كاشير سحابي</title>
+
+<!-- 🛑 إضافة مكتبات Firebase الضرورية (App و Firestore) -->
+<!-- Firestore هي قاعدة البيانات السحابية التي ستخزن الفواتير -->
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
+<style>
+    /* تنسيقات CSS لضمان مظهر جيد على الجوال */
+    body {
+        font-family: sans-serif;
+        background: #f8f8f8;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    h1 {
+        text-align: center;
+        color: #333;
+    }
+    .section {
+        margin-top: 25px;
+        background: #fff;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+    }
+    .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 10px 0;
+    }
+    .item button {
+        padding: 6px 12px;
+        font-size: 18px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    #totalBox {
+        margin-top: 25px;
+        background: #f1f1f1;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 22px;
+        text-align: center;
+        border: 1px solid #ccc;
+    }
+    /* تنسيق زر تم الطلب */
+    #doneBtn {
+        display: block;
+        width: 100%;
+        padding: 15px;
+        margin-top: 20px;
+        background: #ff6666;
+        border: none;
+        color: white;
+        font-size: 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    #doneBtn:hover {
+        background: #e55353;
+    }
+    /* رابط سريع لصفحة الفواتير */
+    .quick-link {
+        display: block;
+        text-align: center;
+        margin-top: 15px;
+        font-size: 16px;
+        color: #4CAF50;
+    }
+</style>
+
+</head>
+
+<body>
+
+<h1>قائمة الطلبات</h1>
+
+<!-- قسم البرجر -->
+<div class="section">
+    <h2>برجر</h2>
+    <div class="item">
+        <span>ميبل - ٢٨ ريال</span>
+        <div>
+            <button onclick="decrease('maple')">−</button>
+            <span id="maple">0</span>
+            <button onclick="increase('maple', 28)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>كلاسيك - ٢٤ ريال</span>
+        <div>
+            <button onclick="decrease('classic')">−</button>
+            <span id="classic">0</span>
+            <button onclick="increase('classic', 24)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>كول سلو - ٢٥ ريال</span>
+        <div>
+            <button onclick="decrease('coleslaw')">−</button>
+            <span id="coleslaw">0</span>
+            <button onclick="increase('coleslaw', 25)">+</button>
+        </div>
+    </div>
+</div>
+
+<!-- أصناف جانبية -->
+<div class="section">
+    <h2>أصناف جانبية</h2>
+    <div class="item">
+        <span>ستريبس ٦ حبات - ٢٣ ريال</span>
+        <div>
+            <button onclick="decrease('strips6')">−</button>
+            <span id="strips6">0</span>
+            <button onclick="increase('strips6', 28)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>ستريبس ٣ حبات - ١٦ ريال</span>
+        <div>
+            <button onclick="decrease('strips3')">−</button>
+            <span id="strips3">0</span>
+            <button onclick="increase('strips3', 16)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>بايتس ٨ حبات - ١٦ ريال</span>
+        <div>
+            <button onclick="decrease('bites8')">−</button>
+            <span id="bites8">0</span>
+            <button onclick="increase('bites8', 16)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>بايتس ٤ حبات - ٨ ريال</span>
+        <div>
+            <button onclick="decrease('bites4')">−</button>
+            <span id="bites4">0</span>
+            <button onclick="increase('bites4', 8)">+</button>
+        </div>
+    </div>
+    <div class="item">
+ <span>لودد فرايز - ٢٢ ريال</span>
+        <div>
+            <button onclick="decrease('loaded')">−</button>
+            <span id="loaded">0</span>
+            <button onclick="increase('loaded', 22)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>فرايز - ٧ ريال</span>
+        <div>
+            <button onclick="decrease('fries')">−</button>
+            <span id="fries">0</span>
+            <button onclick="increase('fries', 7)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>بطاطس تسالي - ١١ ريال</span>
+        <div>
+            <button onclick="decrease('chips')">−</button>
+            <span id="chips">0</span>
+            <button onclick="increase('chips', 11)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>بطاطس تسالي بالدجاج - ١٦ ريال</span>
+        <div>
+            <button onclick="decrease('chipsChicken')">−</button>
+            <span id="chipsChicken">0</span>
+            <button onclick="increase('chipsChicken', 16)">+</button>
+        </div>
+    </div>
+</div>
+
+<!-- صوص -->
+<div class="section">
+    <h2>صوص</h2>
+    <div class="item">
+        <span>رانش صوص - ٣ ريال</span>
+        <div>
+            <button onclick="decrease('ranch')">−</button>
+            <span id="ranch">0</span>
+            <button onclick="increase('ranch', 3)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>تشكيند صوص - ٣ ريال</span>
+        <div>
+            <button onclick="decrease('chknd')">−</button>
+            <span id="chknd">0</span>
+            <button onclick="increase('chknd', 3)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>تشيز صوص - ٥ ريال</span>
+        <div>
+            <button onclick="decrease('cheese')">−</button>
+            <span id="cheese">0</span>
+            <button onclick="increase('cheese', 5)">+</button>
+        </div>
+    </div>
+</div>
+
+<!-- مشروبات -->
+<div class="section">
+    <h2>مشروبات</h2>
+    <div class="item">
+        <span>كولا - ٤ ريال</span>
+        <div>
+            <button onclick="decrease('cola')">−</button>
+            <span id="cola">0</span>
+            <button onclick="increase('cola', 4)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>سبرايت - ٤ ريال</span>
+        <div>
+            <button onclick="decrease('sprite')">−</button>
+            <span id="sprite">0</span>
+            <button onclick="increase('sprite', 4)">+</button>
+        </div>
+    </div>
+    <div class="item">
+        <span>ماء - ٢ ريال</span>
+        <div>
+            <button onclick="decrease('water')">−</button>
+            <span id="water">0</span>
+            <button onclick="increase('water', 2)">+</button>
+        </div>
+    </div>
+</div>
+
+<!-- المجموع الكلي للطلب -->
+<div id="totalBox">
+    المجموع: <span id="total">0 ريال</span>
+</div>
+
+<!-- زر إتمام وحفظ الطلب. ID الزر هو doneBtn -->
+<button id="doneBtn" onclick="processOrder()">تم الطلب وحفظ الفاتورة</button>
+
+<!-- رابط سريع لصفحة السجل -->
+<a href="orders.html" class="quick-link">عرض سجل الفواتير السحابي</a>
+
+<script>
+// 🛑 تهيئة Firebase باستخدام مفاتيحك الخاصة
+const firebaseConfig = {
+  apiKey: "AIzaSyB94M3Flt9fPYKUuM0DdsE4FvvyJk6MrfA",
+  authDomain: "menu-9d12b.firebaseapp.com",
+  projectId: "menu-9d12b",
+  storageBucket: "menu-9d12b.firebasestorage.app",
+  messagingSenderId: "1076348478164",
+  appId: "1:1076348478164:web:5b3984659930c771401141",
+  measurementId: "G-H90HNXQ9P1"
+};
+
+// تهيئة تطبيق Firebase
+firebase.initializeApp(firebaseConfig);
+// الحصول على مرجع قاعدة بيانات Firestore
+const db = firebase.firestore(); 
+
+// قائمة الأصناف والأسعار (محدثة بناءً على الإدخالات الأخيرة)
+let items = {
+    coleslaw: { price: 25, qty: 0 },
+    maple: { price: 28, qty: 0 },
+    classic: { price: 24, qty: 0 },
+
+    strips6: { price: 28, qty: 0 }, // سعر 28 بناءً على الزر
+    strips3: { price: 16, qty: 0 },
+    bites8: { price: 16, qty: 0 },
+    bites4: { price: 8, qty: 0 },
+    loaded: { price: 22, qty: 0 },
+    fries: { price: 7, qty: 0 },
+    chips: { price: 11, qty: 0 },
+
+chipsChicken: { price: 16, qty: 0 },
+
+    ranch: { price: 3, qty: 0 },
+    chknd: { price: 3, qty: 0 },
+    cheese: { price: 5, qty: 0 },
+
+    cola: { price: 4, qty: 0 },
+    sprite: { price: 4, qty: 0 },
+    water: { price: 2, qty: 0 }
+};
+
+// دالة زيادة الكمية
+function increase(item, price) {
+    items[item].qty++;
+    document.getElementById(item).textContent = items[item].qty;
+    updateTotal();
+}
+
+// دالة تقليل الكمية (مع التأكد من عدم النزول تحت الصفر)
+function decrease(item) {
+    if (items[item].qty > 0) {
+        items[item].qty--;
+        document.getElementById(item).textContent = items[item].qty;
+        updateTotal();
+    }
+}
+
+// دالة تحديث المجموع الكلي
+function updateTotal() {
+    let total = 0;
+    for (let key in items) {
+        total += items[key].price * items[key].qty;
+    }
+    document.getElementById("total").textContent = total + " ريال";
+}
+
+// دالة مساعدة للحصول على اسم الصنف بشكل نظيف للحفظ في الفاتورة
+function getItemName(key) {
+    switch (key) {
+        case 'maple': return 'ميبل';
+        case 'classic': return 'كلاسيك';
+        case 'coleslaw': return 'كول سلو';
+        case 'strips6': return 'ستريبس ٦ حبات';
+        case 'strips3': return 'ستريبس ٣ حبات';
+        case 'bites8': return 'بايتس ٨ حبات';
+        case 'bites4': return 'بايتس ٤ حبات';
+        case 'loaded': return 'لودد فرايز';
+        case 'fries': return 'فرايز';
+        case 'chips': return 'بطاطس تسالي';
+        case 'chipsChicken': return 'بطاطس تسالي بالدجاج';
+        case 'ranch': return 'رانش صوص';
+        case 'chknd': return 'تشكيند صوص';
+        case 'cheese': return 'تشيز صوص';
+        case 'cola': return 'كولا';
+        case 'sprite': return 'سبرايت';
+        case 'water': return 'ماء';
+        default: return key;
+    }
+}
+
+// 🛑 الدالة الرئيسية لعملية الطلب والحفظ السحابي
+function processOrder() {
+    let invoice = {
+        // تنسيق التاريخ ليظهر في السجل
+        date: new Date().toLocaleString('ar-EG', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }), 
+        // وقت الخادم لضمان الترتيب الصحيح للفواتير
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+        items: [],
+        total: 0
+    };
+
+    let itemsFound = false; 
+
+    // تجميع الأصناف المطلوبة
+    for (let key in items) {
+        if (items[key].qty > 0) {
+            itemsFound = true;
+            let itemName = getItemName(key); 
+            
+            invoice.items.push({
+                name: itemName,
+                qty: items[key].qty,
+                price: items[key].price
+            });
+            invoice.total += items[key].qty * items[key].price;
+        }
+    }
+
+    // التحقق من وجود أصناف قبل الحفظ
+    if (!itemsFound) {
+        alert("الرجاء اختيار صنف واحد على الأقل قبل إتمام الطلب.");
+        return; 
+    }
+    
+    // 🛑 حفظ الفاتورة في مجموعة "invoices" في Firestore
+    // هذا هو الكود الذي يرسل البيانات إلى السحابة
+    db.collection("invoices").add(invoice)
+        .then(() => {
+            // رسالة نجاح الحفظ
+            alert(`✅ تم حفظ الطلب بنجاح سحابياً! الإجمالي: ${invoice.total} ريال.`);
+
+            // تصفير العدادات والبقاء في نفس الصفحة
+            for (let key in items) {
+                items[key].qty = 0;
+                document.getElementById(key).textContent = 0;
+            }
+            updateTotal();
+        })
+        .catch((error) => {
+            // رسالة خطأ في حال فشل الاتصال أو خطأ في قواعد الأمان
+            console.error("خطأ في حفظ الفاتورة في Firebase: ", error);
+            alert("❌ حدث خطأ في حفظ الطلب سحابياً. تأكدي من قواعد أمان Firebase.");
+        });
+}
+
+// ربط الزر بالدالة processOrder
+document.getElementById('doneBtn').onclick = processOrder;
+</script>
+
+</body>
+</html>
+
