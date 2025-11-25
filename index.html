@@ -282,6 +282,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 // الحصول على مرجع قاعدة بيانات Firestore
 const db = firebase.firestore(); 
+const orderCounterRef = db.collection("meta").doc("orderCounter")    
 
 // قائمة الأصناف والأسعار (محدثة بناءً على الإدخالات الأخيرة)
 let items = {
@@ -359,66 +360,88 @@ function getItemName(key) {
     }
 }
 
-// 🛑 الدالة الرئيسية لعملية الطلب والحفظ السحابي
+// 🛑 
+    // 🛑 الدالة الرئيسية لعملية الطلب والحفظ السحابي
 function processOrder() {
-    let invoice = {
-        // تنسيق التاريخ ليظهر في السجل
-        date: new Date().toLocaleString('ar-EG', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        }), 
-        // وقت الخادم لضمان الترتيب الصحيح للفواتير
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
-        items: [],
-        total: 0
-    };
-
     let itemsFound = false; 
+    let currentTotal = 0;
+    let itemsList = [];
 
-    // تجميع الأصناف المطلوبة
+    // 1. تجميع الأصناف المطلوبة وحساب المجموع
     for (let key in items) {
         if (items[key].qty > 0) {
             itemsFound = true;
             let itemName = getItemName(key); 
             
-            invoice.items.push({
+            itemsList.push({
                 name: itemName,
                 qty: items[key].qty,
                 price: items[key].price
             });
-            invoice.total += items[key].qty * items[key].price;
+            currentTotal += items[key].qty * items[key].price;
         }
     }
 
-    // التحقق من وجود أصناف قبل الحفظ
     if (!itemsFound) {
         alert("الرجاء اختيار صنف واحد على الأقل قبل إتمام الطلب.");
         return; 
     }
     
-    // 🛑 حفظ الفاتورة في مجموعة "invoices" في Firestore
-    // هذا هو الكود الذي يرسل البيانات إلى السحابة
-    db.collection("invoices").add(invoice)
-        .then(() => {
-            // رسالة نجاح الحفظ
-            alert(`✅ تم حفظ الطلب بنجاح سحابياً! الإجمالي: ${invoice.total} ريال.`);
+    // 2. استخدام Transaction لضمان رقم طلب فريد
+    // تتم هذه العملية بالكامل في Firebase لضمان الدقة
+    db.runTransaction(async (transaction) => {
+        const orderCounterDoc = await transaction.get(orderCounterRef);
+        
+        let nextOrderNumber;
+        if (!orderCounterDoc.exists) {
+            // إذا كان هذا هو الطلب الأول، نبدأ من 1
+            nextOrderNumber = 1;
+            // يتم إنشاء الوثيقة بـ 2 استعدادًا للطلب التالي
+            transaction.set(orderCounterRef, { currentNumber: nextOrderNumber + 1 });
+        } else {
+            // قراءة الرقم الحالي وتحديثه للطلب التالي
+            const data = orderCounterDoc.data();
+            nextOrderNumber = data.currentNumber || 1; 
+            transaction.update(orderCounterRef, { currentNumber: nextOrderNumber + 1 });
+        }
 
-            // تصفير العدادات والبقاء في نفس الصفحة
-            for (let key in items) {
-                items[key].qty = 0;
-                document.getElementById(key).textContent = 0;
-            }
-            updateTotal();
-        })
-        .catch((error) => {
-            // رسالة خطأ في حال فشل الاتصال أو خطأ في قواعد الأمان
-            console.error("خطأ في حفظ الفاتورة في Firebase: ", error);
-            alert("❌ حدث خطأ في حفظ الطلب سحابياً. تأكدي من قواعد أمان Firebase.");
-        });
+        // 3. تجهيز بيانات الفاتورة النهائية
+        const invoice = {
+            orderNumber: nextOrderNumber, // 🛑 إضافة رقم الطلب
+            date: new Date().toLocaleString('ar-EG', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }), 
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+            items: itemsList,
+            total: currentTotal
+        };
+
+        // 4. حفظ الفاتورة في مجموعة "invoices"
+        transaction.set(db.collection("invoices").doc(), invoice);
+
+        // إرجاع رقم الطلب لعرضه في رسالة النجاح
+        return nextOrderNumber; 
+
+    }).then((orderNumber) => {
+        // رسالة نجاح الحفظ تعرض رقم الطلب مع المجموع
+        alert(`✅ تم حفظ الطلب بنجاح سحابياً! رقم الطلب: ${orderNumber} | الإجمالي: ${currentTotal} ريال.`);
+
+        // تصفير العدادات والبقاء في نفس الصفحة
+        for (let key in items) {
+            items[key].qty = 0;
+            document.getElementById(key).textContent = 0;
+        }
+        updateTotal();
+
+    }).catch((error) => {
+        console.error("خطأ في عملية الطلب (Transaction failed): ", error);
+        alert("❌ فشل الطلب! تحقق من قواعد أمان Firestore.");
+    });
 }
 
 // ربط الزر بالدالة processOrder
