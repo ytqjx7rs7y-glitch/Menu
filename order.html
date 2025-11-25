@@ -69,6 +69,13 @@ h2 {
 #backBtn:hover {
     background-color: #45a049;
 }
+
+    .order-header {
+    display: flex;
+    justify-content: space-between; /* لفصل رقم الطلب والتاريخ على طرفي السطر */
+    font-weight: bold;
+    margin-bottom: 5px;
+}
 </style>
 </head>
 
@@ -140,12 +147,17 @@ function loadInvoices() {
 
                 htmlContent += `
                     <div class="invoice">
-                        <h2>طلب بتاريخ: ${formattedDate}</h2>
-                        ${inv.items.map(i => `
-                            <div class="item">${i.name} — الكمية: ${i.qty} | السعر: ${i.price} ريال</div>
-                        `).join("")}
-                        <div class="total">الإجمالي الكلي: ${inv.total} ريال</div>
-                    </div>
+    <!-- 🛑 الكود الجديد الذي يضيف رقم الطلب بجانب التاريخ -->
+    <div class="order-header">
+        <h2>رقم الطلب: ${inv.orderNumber || 'غير متوفر'}</h2>
+        <span>${formattedDate}</span>
+    </div>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+    ${inv.items.map(i => `
+        <div class="item">${i.name} — الكمية: ${i.qty} | السعر: ${i.price} ريال</div>
+    `).join("")}
+    <div class="total">الإجمالي الكلي: ${inv.total} ريال</div>
+</div>
 
 `;
             });
