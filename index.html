@@ -174,9 +174,9 @@
      <div class="item">
         <span> SPFR سبايسي تشيز فرايز - ١٦ ريال</span>
         <div>
-            <button onclick="decrease('fries')">−</button>
+            <button onclick="decrease('spicyfries')">−</button>
             <span id="fries">0</span>
-            <button onclick="increase('fries', 7)">+</button>
+            <button onclick="increase('spicyfries', 16)">+</button>
         </div>
     </div>
     <div class="item">
@@ -295,6 +295,7 @@ let items = {
     bites4: { price: 8, qty: 0 },
     loaded: { price: 22, qty: 0 },
     fries: { price: 7, qty: 0 },
+    spicyfries: { price: 16, qty: 0 },
     chips: { price: 11, qty: 0 },
 
 chipsChicken: { price: 16, qty: 0 },
@@ -345,6 +346,7 @@ function getItemName(key) {
         case 'bites4': return ' B4 بايتس ٤ حبات';
         case 'loaded': return ' LO لودد فرايز';
         case 'fries': return ' FR فرايز';
+        case 'spicyfries': return ' SPFR سبايسي فرايز';
         case 'chips': return ' TA بطاطس تسالي';
         case 'chipsChicken': return ' TAC بطاطس تسالي بالدجاج';
         case 'ranch': return ' RS رانش صوص';
